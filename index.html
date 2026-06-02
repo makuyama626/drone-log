@@ -176,6 +176,7 @@
     <div class="card">
       <div class="avatar"><svg viewBox="0 0 24 24" fill="none" stroke="#7d8f99" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
       <label class="fld"><span class="lbl">操縦者名</span><input class="hl" id="setPilot"></label>
+      <label class="fld"><span class="lbl">技能証明の種類（資格）</span><input class="hl" id="setRank"></label>
       <label class="fld"><span class="lbl">技能証明書番号</span><input class="hl" id="setCert"></label>
       <div class="row2">
         <label class="fld"><span class="lbl">技能証明書交付日</span><input type="date" id="setCertIssue"></label>
@@ -263,7 +264,7 @@ const SEED_M=[{"id":"sm1","aircraftId":"ac1","date":"2025-11-03","time":"09:52",
 
 const K={set:'dl4_settings',f:'dl4_flights',i:'dl4_inspections',m:'dl4_maint'};
 const DEF_SET={
-  pilot:'松山成二', cert:'25100158370', certIssue:'2025-10-23', certReg:'2025-10-23',
+  pilot:'松山成二', rank:'一等無人航空機操縦士', cert:'25100158370', certIssue:'2025-10-23', certReg:'2025-10-23',
   active:'ac1',
   aircraft:[
     {id:'ac1', name:'DJI式mini4pro', reg:'JU325AF85AD3', maker:'DJI', drone:'DJI Mini 4 Pro', kind:'回転翼航空機(マルチローター)', serial:'1581F6Z9C2516003AHW2', typeCert:'6', airCert:'R0727429402', airDate:'2025-10-30', carryF:0, carryMin:0},
@@ -495,7 +496,7 @@ function delAircraft(){
 
 function renderSettings(){
   const ac=activeAc();
-  $('setPilot').value=SET.pilot||'';$('setCert').value=SET.cert||'';$('setCertIssue').value=SET.certIssue||'';$('setCertReg').value=SET.certReg||'';
+  $('setPilot').value=SET.pilot||'';$('setRank').value=SET.rank||'';$('setCert').value=SET.cert||'';$('setCertIssue').value=SET.certIssue||'';$('setCertReg').value=SET.certReg||'';
   $('setName').value=ac.name||'';$('setReg').value=ac.reg||'';$('setMaker').value=ac.maker||'';$('setDrone').value=ac.drone||'';$('setKind').value=ac.kind||'';
   $('setSerial').value=ac.serial||'';$('setTypeCert').value=ac.typeCert||'';$('setAirCert').value=ac.airCert||'';$('setAirDate').value=ac.airDate||'';
   $('setCarryF').value=ac.carryF??0;$('setCarryMin').value=ac.carryMin??0;
@@ -510,7 +511,7 @@ function renderSettings(){
   renderSwitch();
 }
 function saveBasics(){
-  SET.pilot=$('setPilot').value.trim();SET.cert=$('setCert').value.trim();SET.certIssue=$('setCertIssue').value;SET.certReg=$('setCertReg').value;
+  SET.pilot=$('setPilot').value.trim();SET.rank=$('setRank').value.trim();SET.cert=$('setCert').value.trim();SET.certIssue=$('setCertIssue').value;SET.certReg=$('setCertReg').value;
   const ac=activeAc();
   ac.name=$('setName').value.trim();ac.reg=$('setReg').value.trim();ac.maker=$('setMaker').value.trim();ac.drone=$('setDrone').value.trim();ac.kind=$('setKind').value.trim();
   ac.serial=$('setSerial').value.trim();ac.typeCert=$('setTypeCert').value.trim();ac.airCert=$('setAirCert').value.trim();ac.airDate=$('setAirDate').value;
@@ -551,7 +552,7 @@ function buildFlight(ac){
     if(pi===0)rows+=`<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="c">${hmc(N(ac.carryMin))}</td><td>2022年12月5日の改正航空法施行に伴い総飛行時間を新たに起算。</td></tr>`;
     chunk.forEach(f=>{run+=(f.dur||0);const nm=esc(f.pilot)+(f.supervisor?`（監督者:${esc(f.supervisor)}）`:'');
       rows+=`<tr><td class="c">${fmtDot(f.date)}</td><td>${nm}</td><td>${esc(f.purpose)}</td><td>${esc(f.from)}</td><td>${esc(f.to||f.from)}</td><td class="c">${f.takeoff||''}</td><td class="c">${f.landing||''}</td><td class="c">${hmc(f.dur)}</td><td class="c">${hmc(run)}</td><td>${esc(f.note)}</td></tr>`;});
-    html+=`<div class="page"><div class="nr">(NR. ${pi+1} )</div><h4>(様式1)飛行記録　無人航空機の飛行記録<span class="ttl-en">JOURNEY LOG OF UAS</span></h4>${mhTable(ac)}<div class="cert">技能証明書番号：${esc(SET.pilot)}(${esc(SET.cert)})</div>
+    html+=`<div class="page"><div class="nr">(NR. ${pi+1} )</div><h4>(様式1)飛行記録　無人航空機の飛行記録<span class="ttl-en">JOURNEY LOG OF UAS</span></h4>${mhTable(ac)}<div class="cert">${SET.rank?'技能証明：'+esc(SET.rank)+'　':''}技能証明書番号：${esc(SET.pilot)}(${esc(SET.cert)})</div>
     <table style="table-layout:fixed">${cols}<thead><tr><th>飛行年月日</th><th>飛行させた者の氏名</th><th>飛行概要</th><th>離陸場所</th><th>着陸場所</th><th>離陸時刻</th><th>着陸時刻</th><th>飛行時間</th><th>総飛行時間</th><th>飛行の安全に影響のあった事項</th></tr></thead><tbody>${rows}</tbody></table>
     <table><thead><tr><th colspan="5" style="text-align:left">記事 REPORT</th></tr><tr><th>発生年月日</th><th>不具合事項</th><th>処置年月日</th><th>処置その他</th><th>確認者</th></tr></thead><tbody><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`;
   });
