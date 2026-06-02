@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#34495e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="飛行日誌">
+<title>ドローン飛行日誌</title>
+<style>
+  :root{
+    --navy:#34495e; --navy-d:#2c3e50; --bg:#e9dccd; --bg2:#efe5d8;
+    --card:#ffffff; --hl:#e7d6c4; --hl-line:#dcc8b3;
+    --ink:#2b3640; --muted:#8d99a2; --line:#e2e6e9;
+    --red:#c0392b; --amber:#d97706; --ok:#2e7d52;
+    --shadow:0 1px 2px rgba(60,50,40,.06),0 6px 16px rgba(60,50,40,.07);
+    --radius:18px;
+    --mono:'SF Mono',ui-monospace,'Roboto Mono',Menlo,Consolas,monospace;
+    --jp:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic',Meiryo,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--jp);color:var(--ink);background:var(--bg);font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%;padding-bottom:calc(74px + env(safe-area-inset-bottom));}
+  header.app{position:sticky;top:0;z-index:50;background:var(--navy);color:#fff;padding:calc(env(safe-area-inset-top) + 13px) 18px 13px;box-shadow:0 2px 10px rgba(44,62,80,.25);}
+  header.app .ttl{display:flex;align-items:center;gap:11px;}
+  header.app h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.02em;}
+  header.app .sub{font-size:11.5px;opacity:.78;margin-top:2px;letter-spacing:.03em;}
+  .badge-reg{margin-left:auto;font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.14);padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.22);}
+  .logo{width:27px;height:27px;flex:0 0 auto;}
+  main{padding:14px 14px 24px;max-width:680px;margin:0 auto;}
+  .view{display:none;animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  h2.sec{font-size:14px;margin:6px 4px 11px;color:var(--navy);font-weight:700;letter-spacing:.03em;display:flex;align-items:center;gap:8px;}
+  h2.sec::before{content:"";width:4px;height:15px;background:var(--navy);border-radius:2px;}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
+  .acswitch{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch;}
+  .acpill{flex:0 0 auto;background:#fff;border:1.5px solid var(--line);border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;color:var(--navy);font-family:var(--jp);cursor:pointer;white-space:nowrap;box-shadow:var(--shadow);}
+  .acpill.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .stat{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;}
+  .stat .lab{font-size:11.5px;color:var(--muted);letter-spacing:.03em;}
+  .stat .val{font-family:var(--mono);font-size:25px;font-weight:600;color:var(--navy);line-height:1.2;margin-top:3px;}
+  .stat .val small{font-size:13px;color:var(--muted);font-weight:500;margin-left:3px;}
+  .maint-note{background:#fff;border-left:4px solid var(--navy);border-radius:12px;padding:11px 13px;font-size:12.5px;color:#42525e;margin-bottom:14px;box-shadow:var(--shadow);}
+  .maint-note.warn{border-left-color:var(--amber);color:#7a4a00;background:#fff7ec;}
+  .maint-note b{font-family:var(--mono);}
+  .rec{background:var(--card);border-radius:15px;box-shadow:var(--shadow);padding:13px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;border-left:4px solid var(--navy);}
+  .rec:active{transform:scale(.99);}
+  .rec.bad{border-left-color:var(--red);}
+  .rec .r-main{flex:1;min-width:0;}
+  .rec .r-date{font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .rec .r-ttl{font-weight:700;font-size:14.5px;margin:1px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rec .r-meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rec .r-side{text-align:right;flex:0 0 auto;}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;}
+  .pill.ok{background:#e6f1ea;color:var(--ok);}
+  .pill.bad{background:#fbe9e7;color:var(--red);}
+  .pill.time{font-family:var(--mono);background:#eef1f3;color:var(--navy);}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:38px 10px;}
+  .empty svg{opacity:.4;margin-bottom:8px;}
+  label.fld{display:block;margin-bottom:13px;}
+  label.fld .lbl{display:block;font-size:12.5px;color:var(--navy);font-weight:600;margin-bottom:5px;}
+  label.fld .lbl .req{color:var(--red);margin-left:3px;}
+  input,select,textarea{width:100%;font-family:var(--jp);font-size:16px;color:var(--ink);background:#f7f9fa;border:1.5px solid var(--line);border-radius:11px;padding:11px 12px;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--navy);background:#fff;}
+  input.hl{background:var(--hl);border-color:var(--hl-line);font-weight:600;}
+  input.hl:focus{background:#f2e6d8;}
+  textarea{min-height:62px;resize:vertical;line-height:1.5;}
+  input[type="time"],input[type="date"]{font-family:var(--mono);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .chkline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--navy);margin:-6px 2px 12px;}
+  .chkline input{width:auto;}
+  .seg{display:flex;flex-wrap:wrap;gap:7px;}
+  .seg button{flex:1 1 auto;min-width:72px;background:#f7f9fa;border:1.5px solid var(--line);border-radius:10px;padding:9px 6px;font-size:12.5px;color:var(--navy);font-family:var(--jp);cursor:pointer;}
+  .seg button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:700;}
+  .insp-item{border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px;background:#f7f9fa;}
+  .insp-item.bad{border-color:var(--red);background:#fdf4f3;}
+  .insp-head{display:flex;align-items:flex-start;gap:8px;}
+  .insp-head .ix{font-family:var(--mono);font-size:11px;color:#fff;background:var(--navy);border-radius:6px;padding:1px 6px;flex:0 0 auto;margin-top:2px;}
+  .insp-head .nm{font-weight:700;font-size:13.5px;flex:1;}
+  .insp-head .desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+  .toggle{display:flex;gap:6px;margin-top:9px;}
+  .toggle button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:9px;padding:8px;font-size:13px;font-weight:700;color:var(--muted);font-family:var(--jp);cursor:pointer;}
+  .toggle button.ok-on{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .toggle button.bad-on{background:var(--red);border-color:var(--red);color:#fff;}
+  .insp-note{margin-top:8px;display:none;}
+  .insp-item.bad .insp-note{display:block;}
+  .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:16px;font-weight:700;font-family:var(--jp);cursor:pointer;letter-spacing:.02em;}
+  .btn.primary{background:var(--navy);color:#fff;box-shadow:0 4px 14px rgba(44,62,80,.3);}
+  .btn.primary:active{transform:scale(.99);}
+  .btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--line);}
+  .btn.danger{background:#fff;color:var(--red);border:1.5px solid #ecc4bf;}
+  .btn-row{display:flex;gap:10px;margin-top:6px;}
+  .btn-row .btn{flex:1;}
+  .mini{font-size:13px;padding:11px;}
+  .fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:40;width:58px;height:58px;border-radius:50%;background:var(--navy);color:#fff;border:none;font-size:30px;line-height:1;box-shadow:0 6px 20px rgba(44,62,80,.45);cursor:pointer;display:none;}
+  .fab.show{display:flex;align-items:center;justify-content:center;}
+  nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(60,50,40,.06);}
+  nav.tabs button{flex:1;background:none;border:none;padding:9px 2px 8px;font-family:var(--jp);color:var(--muted);font-size:10.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  nav.tabs button.on{color:var(--navy);}
+  nav.tabs svg{width:23px;height:23px;}
+  .sheet-bg{position:fixed;inset:0;background:rgba(30,25,20,.45);z-index:100;display:none;align-items:flex-end;justify-content:center;}
+  .sheet-bg.show{display:flex;animation:fade .2s;}
+  .sheet{background:var(--bg);width:100%;max-width:680px;max-height:94vh;overflow:auto;border-radius:22px 22px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));animation:slideup .28s cubic-bezier(.2,.9,.3,1);}
+  @keyframes slideup{from{transform:translateY(100%);}to{transform:none;}}
+  .sheet .grip{width:40px;height:4px;background:#cdbba6;border-radius:3px;margin:8px auto 14px;}
+  .sheet h3{font-size:17px;margin:0 0 16px;color:var(--navy);}
+  .det-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .det-row:last-child{border:none;}
+  .det-row .k{color:var(--muted);flex:0 0 auto;}
+  .det-row .v{text-align:right;font-weight:600;word-break:break-word;}
+  .det-row .v.mono{font-family:var(--mono);}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));background:var(--ink);color:#fff;padding:11px 20px;border-radius:30px;font-size:13.5px;z-index:200;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+  .hint{font-size:11.5px;color:var(--muted);margin:-7px 2px 13px;line-height:1.5;}
+  .avatar{width:96px;height:96px;border-radius:50%;background:#dfe9e4;margin:4px auto 14px;display:flex;align-items:center;justify-content:center;}
+  .avatar svg{width:56px;height:56px;}
+  .summary{text-align:center;font-size:13.5px;color:#5a6670;line-height:2;margin:4px 0 2px;}
+  .summary b{font-family:var(--mono);color:var(--navy);}
+  .summary .perac{font-size:11.5px;color:var(--muted);line-height:1.7;margin-top:6px;}
+  .chip-add{display:flex;gap:7px;margin-top:7px;}
+  .chip-add input{flex:1;}
+  .chip-add button{flex:0 0 auto;width:48px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:22px;cursor:pointer;}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;}
+  .chip{background:#eef1f3;color:#42525e;border-radius:20px;padding:5px 11px;font-size:12.5px;display:flex;align-items:center;gap:6px;}
+  .chip b{cursor:pointer;color:#9aa6ad;font-size:15px;}
+  .set-grp{margin-bottom:8px;}
+  @media print{header.app,nav.tabs,.fab,.sheet-bg,.acswitch{display:none!important;}body{padding:0;background:#fff;}}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="ttl">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/>
+      <rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M8 8 7 7M16 8l1-1M8 16l-1 1M16 16l1 1"/>
+    </svg>
+    <div><h1>ドローン飛行日誌</h1><div class="sub" id="hdrSub">機体 ／ 松山成二</div></div>
+    <span class="badge-reg" id="regBadge">JU—</span>
+  </div>
+</header>
+
+<main>
+  <section class="view active" id="v-home">
+    <div class="acswitch"></div>
+    <div class="stats">
+      <div class="stat"><div class="lab">この機体の総飛行時間</div><div class="val" id="totHours">0<small>分</small></div></div>
+      <div class="stat"><div class="lab">この機体の飛行回数</div><div class="val" id="totFlights">0<small>回</small></div></div>
+    </div>
+    <div id="maintBox"></div>
+    <h2 class="sec">最近の飛行記録</h2><div id="homeFlights"></div>
+    <h2 class="sec">最近の点検記録</h2><div id="homeInsp"></div>
+  </section>
+  <section class="view" id="v-flight"><h2 class="sec">飛行記録</h2><div class="acswitch"></div><div id="flightList"></div></section>
+  <section class="view" id="v-insp"><h2 class="sec">日常点検記録</h2><div class="acswitch"></div><div id="inspList"></div></section>
+  <section class="view" id="v-maint"><h2 class="sec">点検整備記録</h2><div class="acswitch"></div><div id="maintList"></div></section>
+
+  <section class="view" id="v-set">
+    <h2 class="sec">操縦者情報</h2>
+    <div class="card">
+      <div class="avatar"><svg viewBox="0 0 24 24" fill="none" stroke="#7d8f99" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+      <label class="fld"><span class="lbl">操縦者名</span><input class="hl" id="setPilot"></label>
+      <label class="fld"><span class="lbl">技能証明書番号</span><input class="hl" id="setCert"></label>
+      <div class="row2">
+        <label class="fld"><span class="lbl">技能証明書交付日</span><input type="date" id="setCertIssue"></label>
+        <label class="fld"><span class="lbl">技能証明書登録日</span><input type="date" id="setCertReg"></label>
+      </div>
+      <div class="summary" id="pilotSummary"></div>
+    </div>
+
+    <h2 class="sec">機体の管理</h2>
+    <div class="card">
+      <div class="hint" style="margin-top:0">編集する機体を選んでください。選んだ機体がアプリ全体の表示対象になります。</div>
+      <div class="acswitch" id="acSwitchSet"></div>
+      <button class="btn ghost mini" onclick="addAircraft()" style="margin-bottom:14px">＋ 機体を追加</button>
+      <label class="fld"><span class="lbl">名称</span><input id="setName"></label>
+      <label class="fld"><span class="lbl">登録記号</span><input class="hl" id="setReg" placeholder="JU…"></label>
+      <div class="row2">
+        <label class="fld"><span class="lbl">設計製造者</span><input id="setMaker"></label>
+        <label class="fld"><span class="lbl">型式</span><input id="setDrone"></label>
+      </div>
+      <label class="fld"><span class="lbl">種類</span><input id="setKind"></label>
+      <label class="fld"><span class="lbl">製造番号</span><input class="hl" id="setSerial"></label>
+      <div class="row2">
+        <label class="fld"><span class="lbl">型式認証番号</span><input class="hl" id="setTypeCert"></label>
+        <label class="fld"><span class="lbl">機体認証日</span><input type="date" id="setAirDate"></label>
+      </div>
+      <label class="fld"><span class="lbl">機体認証番号</span><input class="hl" id="setAirCert"></label>
+      <div class="row2">
+        <label class="fld"><span class="lbl">繰越 飛行回数</span><input type="number" inputmode="numeric" id="setCarryF"></label>
+        <label class="fld"><span class="lbl">繰越 飛行時間（分）</span><input type="number" inputmode="numeric" id="setCarryMin"></label>
+      </div>
+      <div class="hint">繰越は、このアプリに入っていない過去分を足したいときだけ使用（通常0）。</div>
+      <button class="btn primary" onclick="saveBasics()">操縦者・機体情報を保存</button>
+      <button class="btn danger mini" style="margin-top:10px" onclick="delAircraft()">この機体を削除</button>
+    </div>
+
+    <h2 class="sec">入力候補（プルダウン）</h2>
+    <div class="card"><div class="hint" style="margin-top:0">よく使う値を登録すると記録入力時に選べます。</div><div id="masterBox"></div></div>
+
+    <h2 class="sec">データのバックアップ</h2>
+    <div class="card">
+      <div class="hint" style="margin-top:0">記録はこの端末内に保存されます。機種変更・データ消去に備え、定期的にバックアップしてください。CSVは選択中の機体分が出力されます。</div>
+      <div class="btn-row">
+        <button class="btn ghost mini" onclick="exportJSON()">⬇ バックアップ書出</button>
+        <button class="btn ghost mini" onclick="document.getElementById('impFile').click()">⬆ 復元</button>
+      </div>
+      <input type="file" id="impFile" accept="application/json" style="display:none" onchange="importJSON(event)">
+      <div class="btn-row">
+        <button class="btn ghost mini" onclick="exportCSV('flight')">飛行CSV(様式1)</button>
+        <button class="btn ghost mini" onclick="exportCSV('insp')">点検CSV(様式2)</button>
+        <button class="btn ghost mini" onclick="exportCSV('maint')">整備CSV(様式3)</button>
+      </div>
+      <button class="btn danger mini" style="margin-top:10px" onclick="wipeAll()">全データを削除</button>
+    </div>
+    <div class="hint" style="text-align:center;margin-top:4px">© マクヤマベース　Massan</div>
+  </section>
+</main>
+
+<button class="fab" id="fab" onclick="openForm()">＋</button>
+
+<nav class="tabs">
+  <button class="on" data-tab="home" onclick="go('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>ホーム</button>
+  <button data-tab="flight" onclick="go('flight')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3 7 7 1-5 5 1.5 7L12 18l-6.5 4L7 15 2 10l7-1z"/></svg>飛行</button>
+  <button data-tab="insp" onclick="go('insp')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>点検</button>
+  <button data-tab="maint" onclick="go('maint')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 00-5.4 5.4l-6 6 2 2 6-6a4 4 0 005.4-5.4l-2.3 2.3-2-2z"/></svg>整備</button>
+  <button data-tab="set" onclick="go('set')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L14.5 2h-5L9.2 4.4a7 7 0 00-1.7 1l-2.4-1-2 3.4L5 9a7 7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1L9.5 22h5l.3-2.4a7 7 0 001.7-1l2.4 1 2-3.4-2-1.6c.1-.3.1-.7.1-1z"/></svg>設定</button>
+</nav>
+
+<div class="sheet-bg" id="sheetBg" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet"><div class="grip"></div><div id="sheetBody"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SEED_F=[{"id":"sf1","aircraftId":"ac1","date":"2025-11-03","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町鍛冶屋","to":"神奈川県湯河原町鍛冶屋","takeoff":"09:48","landing":"10:23","dur":35,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf2","aircraftId":"ac1","date":"2025-11-03","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜1237-8","to":"神奈川県湯河原町吉浜1237-8","takeoff":"10:30","landing":"11:00","dur":30,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf3","aircraftId":"ac1","date":"2025-11-04","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県真鶴町真鶴1175","to":"神奈川県真鶴町真鶴1175","takeoff":"13:39","landing":"14:04","dur":25,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf4","aircraftId":"ac1","date":"2025-11-04","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県真鶴町真鶴1175","to":"神奈川県真鶴町真鶴1175","takeoff":"14:07","landing":"14:32","dur":25,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf5","aircraftId":"ac1","date":"2025-11-04","purpose":"","from":"神奈川県真鶴町真鶴1175","to":"神奈川県真鶴町真鶴1175","takeoff":"14:33","landing":"14:33","dur":0,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf6","aircraftId":"ac1","date":"2025-11-04","purpose":"","from":"神奈川県真鶴町真鶴1175","to":"神奈川県真鶴町真鶴1175","takeoff":"14:33","landing":"14:51","dur":18,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf7","aircraftId":"ac1","date":"2025-11-12","purpose":"趣味(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"08:50","landing":"09:20","dur":30,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf8","aircraftId":"ac1","date":"2025-11-12","purpose":"趣味(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:21","landing":"09:38","dur":17,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf9","aircraftId":"ac1","date":"2025-11-12","purpose":"趣味(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:39","landing":"10:01","dur":22,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf10","aircraftId":"ac1","date":"2025-11-14","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県真鶴町真鶴","to":"神奈川県真鶴町真鶴","takeoff":"13:00","landing":"13:33","dur":33,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf11","aircraftId":"ac1","date":"2025-11-14","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県真鶴町真鶴","to":"神奈川県真鶴町真鶴","takeoff":"13:54","landing":"14:07","dur":13,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"ヘリコプターが飛来したので、すぐに飛行を中止し、着陸した。","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf12","aircraftId":"ac1","date":"2025-11-26","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"08:34","landing":"08:54","dur":20,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf13","aircraftId":"ac1","date":"2025-11-26","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"08:55","landing":"09:14","dur":19,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf14","aircraftId":"ac1","date":"2025-11-26","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:15","landing":"09:39","dur":24,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf15","aircraftId":"ac1","date":"2025-11-26","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:50","landing":"10:07","dur":17,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf16","aircraftId":"ac1","date":"2025-12-10","purpose":"空撮(特定飛行ではない(カテゴリーⅠ)) 新崎川","from":"神奈川県湯河原町鍛冶屋","to":"神奈川県湯河原町鍛冶屋","takeoff":"13:06","landing":"13:20","dur":14,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf17","aircraftId":"ac1","date":"2025-12-10","purpose":"空撮(特定飛行ではない(カテゴリーⅠ)) 新崎川","from":"神奈川県湯河原町鍛冶屋","to":"神奈川県湯河原町鍛冶屋","takeoff":"13:23","landing":"13:43","dur":20,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf18","aircraftId":"ac1","date":"2025-12-10","purpose":"空撮(特定飛行ではない(カテゴリーⅠ)) 新崎川","from":"湯河原町鍛冶屋","to":"湯河原町鍛冶屋","takeoff":"13:50","landing":"14:08","dur":18,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf19","aircraftId":"ac1","date":"2025-12-10","purpose":"空撮(特定飛行ではない(カテゴリーⅠ)) 新崎川","from":"湯河原町鍛冶屋","to":"湯河原町鍛冶屋","takeoff":"14:10","landing":"14:25","dur":15,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf20","aircraftId":"ac1","date":"2025-12-16","purpose":"","from":"神奈川県湯河原町吉浜1237-8","to":"神奈川県湯河原町吉浜1237-8","takeoff":"13:00","landing":"13:31","dur":31,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"プロペラガード装着テスト実施","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf21","aircraftId":"ac1","date":"2025-12-16","purpose":"趣味","from":"神奈川県湯河原町吉浜1237-8","to":"神奈川県湯河原町吉浜1237-8","takeoff":"13:48","landing":"14:20","dur":32,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf22","aircraftId":"ac1","date":"2026-05-27","purpose":"","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:10","landing":"09:40","dur":30,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf23","aircraftId":"ac1","date":"2026-05-27","purpose":"","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:41","landing":"10:01","dur":20,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf24","aircraftId":"ac1","date":"2026-05-30","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町真鶴 番場浦海岸","to":"神奈川県湯河原町真鶴 番場浦海岸","takeoff":"12:10","landing":"12:40","dur":30,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"mv1","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"09:18","landing":"10:00","dur":42,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv2","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"10:17","landing":"11:08","dur":51,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv3","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"11:20","landing":"12:02","dur":42,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv4","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"13:30","landing":"14:05","dur":35,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv5","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"14:07","landing":"14:30","dur":23,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv6","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"15:10","landing":"15:20","dur":10,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"}];
+const SEED_I=[{"id":"si1","aircraftId":"ac1","date":"2025-11-03","time":"09:52","inspector":"松山成二","place":"神奈川県湯河原町鍛冶屋","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si2","aircraftId":"ac1","date":"2025-11-04","time":"13:40","inspector":"松山成二","place":"真鶴町1175","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si3","aircraftId":"ac1","date":"2025-11-04","time":"14:05","inspector":"松山成二","place":"神奈川県真鶴町真鶴1175","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si4","aircraftId":"ac1","date":"2025-11-12","time":"10:01","inspector":"松山成二","place":"神奈川県湯河原町吉浜","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si5","aircraftId":"ac1","date":"2025-11-14","time":"14:15","inspector":"松山成二","place":"神奈川県真鶴町真鶴","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si6","aircraftId":"ac1","date":"2025-11-26","time":"08:30","inspector":"松山成二","place":"神奈川県湯河原町吉浜","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si7","aircraftId":"ac1","date":"2025-12-10","time":"15:17","inspector":"松山成二","place":"湯河原町鍛冶屋","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"特になし。小さい虫が付着したので清掃した","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si8","aircraftId":"ac1","date":"2025-12-16","time":"14:22","inspector":"松山成二","place":"神奈川県湯河原町吉浜1237-8","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si9","aircraftId":"ac1","date":"2026-05-27","time":"10:21","inspector":"松山成二","place":"神奈川県湯河原町鍛冶屋951-10","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常なし","memo":"飛行後、プロペラを交換済み","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"si10","aircraftId":"ac1","date":"2026-05-30","time":"14:35","inspector":"松山成二","place":"神奈川県湯河原町吉浜1237-8","results":{"0":"正常","1":"正常","2":"正常","3":"正常","4":"正常","5":"正常","6":"正常","7":"正常","8":"正常"},"notes":{},"postChecks":{"0":"正常","1":"正常","2":"正常","3":"正常"},"post":"異常あり","memo":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"}];
+const SEED_M=[{"id":"sm1","aircraftId":"ac1","date":"2025-11-03","time":"09:52","total":"0:35","content":"プロペラ、ネジの歪み、シールの剥がれ、汚れ、外観等全て異常なし。送信器側も異常なし。","reason":"初飛行前の点検整備","place":"神奈川県湯河原町鍛冶屋","engineer":"松山成二","note":""},{"id":"sm2","aircraftId":"ac1","date":"2025-11-03","time":"11:18","total":"1:05","content":"プロペラ、異常、発熱、シールの剥がれ、汚れ等なし","reason":"飛行後","place":"神奈川県湯河原町吉浜1237-8","engineer":"松山成二","note":""}];
+
+const K={set:'dl4_settings',f:'dl4_flights',i:'dl4_inspections',m:'dl4_maint'};
+const DEF_SET={
+  pilot:'松山成二', cert:'25100158370', certIssue:'2025-10-23', certReg:'2025-10-23',
+  active:'ac1',
+  aircraft:[
+    {id:'ac1', name:'DJI式mini4pro', reg:'JU325AF85AD3', maker:'DJI', drone:'DJI Mini 4 Pro', kind:'回転翼航空機(マルチローター)', serial:'1581F6Z9C2516003AHW2', typeCert:'6', airCert:'R0727429402', airDate:'2025-10-30', carryF:0, carryMin:0},
+    {id:'ac2', name:'DJI Mavic 3', reg:'JU3242347D93', maker:'DJI', drone:'DJI Mavic 3', kind:'回転翼航空機(マルチローター)', serial:'', typeCert:'', airCert:'', airDate:'', carryF:0, carryMin:0}
+  ],
+  masters:{
+    purpose:['空撮(特定飛行ではない(カテゴリーⅠ))','趣味(特定飛行ではない(カテゴリーⅠ))','操縦練習(特定飛行ではない(カテゴリーⅠ))','趣味','業務（橋梁点検）'],
+    place:['神奈川県湯河原町吉浜1237-8','神奈川県湯河原町鍛冶屋','神奈川県真鶴町真鶴1175','神奈川県高座郡寒川町一宮3003-1','新崎川'],
+    battery:['IFB-001','IFB-002','IFB Plus-001'],
+    supervisor:['松山成二'],
+    engineer:['松山成二','DJI JAPAN'],
+    reason:['初飛行前の点検整備','飛行前','飛行後','定期点検','部品交換']
+  }
+};
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):structuredClone(d);}catch(e){return structuredClone(d);}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){toast('保存に失敗しました');}}
+let SET=load(K.set,DEF_SET); let FL=load(K.f,SEED_F); let IN=load(K.i,SEED_I); let MT=load(K.m,SEED_M);
+for(const key in DEF_SET){
+  if(key==='masters'){if(!SET.masters)SET.masters={};for(const mk in DEF_SET.masters){if(!SET.masters[mk])SET.masters[mk]=structuredClone(DEF_SET.masters[mk]);}continue;}
+  if(SET[key]===undefined||SET[key]===null)SET[key]=structuredClone(DEF_SET[key]);
+}
+if(!Array.isArray(SET.aircraft)||!SET.aircraft.length)SET.aircraft=structuredClone(DEF_SET.aircraft);
+if(!SET.aircraft.find(a=>a.id===SET.active))SET.active=SET.aircraft[0].id;
+save(K.set,SET);
+
+const INSP_ITEMS=[
+  ['機体全般','機器の取り付け状態（ネジ、コネクタ、ケーブル等）'],
+  ['プロペラ','外観、損傷、ゆがみ'],
+  ['フレーム','外観、損傷、ゆがみ'],
+  ['通信系統','機体と操縦装置の通信品質の健全性'],
+  ['推進系統','モーターまたは発動機の健全性'],
+  ['電源系統','機体および操縦装置の電源の健全性'],
+  ['自動制御装置','飛行制御装置の電源の健全性'],
+  ['操縦装置','外観、スティックとスイッチの健全性'],
+  ['バッテリー','バッテリーの充電状況と残燃料表示機能の健全性']
+];
+const POST_CHECKS=['機体にゴミ等の付着はないか','各機器は確実に取り付けられているか（ネジ等の脱落やゆるみ等）','機体（プロペラ、フレーム等）に損傷やゆがみはないか','各機器の異常な発熱はないか'];
+
+const $=id=>document.getElementById(id);
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1900);}
+function fmtDate(d){if(!d)return'';const p=d.split('-');return p.length===3?`${p[0]}/${p[1]}/${p[2]}`:d;}
+function diffMin(a,b){if(!a||!b)return null;const[h1,m1]=a.split(':').map(Number),[h2,m2]=b.split(':').map(Number);let d=(h2*60+m2)-(h1*60+m1);if(d<0)d+=1440;return d;}
+function hm(min){if(min==null)return'—';const h=Math.floor(min/60),m=min%60;return h>0?`${h}時間${m}分`:`${m}分`;}
+function hmc(min){if(min==null)return'';const h=Math.floor(min/60),m=min%60;return `${h}:${String(m).padStart(2,'0')}`;}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+const N=v=>{const n=parseInt(v,10);return isNaN(n)?0:n;};
+function sortF(){FL.sort((a,b)=>(b.date+(b.takeoff||'00:00')).localeCompare(a.date+(a.takeoff||'00:00')));}
+function sortI(){IN.sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));}
+function sortM(){MT.sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));}
+function acById(id){return (SET.aircraft||[]).find(a=>a.id===id)||SET.aircraft[0];}
+function activeAc(){return acById(SET.active);}
+function aFlights(){return FL.filter(f=>(f.aircraftId||SET.aircraft[0].id)===SET.active);}
+function aInsp(){return IN.filter(x=>(x.aircraftId||SET.aircraft[0].id)===SET.active);}
+function aMaint(){return MT.filter(x=>(x.aircraftId||SET.aircraft[0].id)===SET.active);}
+
+let cur='home';
+function go(tab){
+  cur=tab;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$('v-'+tab).classList.add('active');
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  $('fab').classList.toggle('show',['flight','insp','maint'].includes(tab));window.scrollTo(0,0);
+  if(tab==='set')renderSettings();render();
+}
+function switchHTML(){return SET.aircraft.map(a=>`<button class="acpill ${a.id===SET.active?'on':''}" onclick="setActive('${a.id}')">${esc(a.name||a.drone||a.reg)}</button>`).join('');}
+function renderSwitch(){document.querySelectorAll('.acswitch').forEach(e=>{if(e.id==='acSwitchSet')return;e.innerHTML=switchHTML();});if($('acSwitchSet'))$('acSwitchSet').innerHTML=SET.aircraft.map(a=>`<button class="acpill ${a.id===SET.active?'on':''}" onclick="selectAcForEdit('${a.id}')">${esc(a.name||a.drone||a.reg)}</button>`).join('');}
+function setActive(id){SET.active=id;save(K.set,SET);renderSwitch();render();}
+function selectAcForEdit(id){SET.active=id;save(K.set,SET);renderSettings();render();}
+
+function render(){
+  const ac=activeAc();
+  $('regBadge').textContent=ac.reg||'JU—';
+  $('hdrSub').textContent=(ac.drone||ac.name||'機体')+' ／ '+SET.pilot;
+  const aFL=aFlights(),aIN=aInsp(),aMT=aMaint();
+  const totMin=N(ac.carryMin)+aFL.reduce((s,f)=>s+(f.dur||0),0);
+  const totF=N(ac.carryF)+aFL.length;
+  $('totHours').innerHTML=totMin>=60?`${Math.floor(totMin/60)}<small>時間</small>${totMin%60}<small>分</small>`:`${totMin}<small>分</small>`;
+  $('totFlights').innerHTML=`${totF}<small>回</small>`;
+  renderMaintNote(totMin,totF);
+  $('homeFlights').innerHTML=aFL.length?aFL.slice(0,3).map(flightRow).join(''):emptyMsg('この機体の飛行記録はまだありません');
+  $('homeInsp').innerHTML=aIN.length?aIN.slice(0,3).map(inspRow).join(''):emptyMsg('この機体の点検記録はまだありません');
+  $('flightList').innerHTML=aFL.length?aFL.map(flightRow).join(''):emptyMsg('右下の＋から飛行記録を追加');
+  $('inspList').innerHTML=aIN.length?aIN.map(inspRow).join(''):emptyMsg('右下の＋から日常点検を追加');
+  $('maintList').innerHTML=aMT.length?aMT.map(maintRow).join(''):emptyMsg('右下の＋から整備記録を追加');
+  renderSwitch();
+}
+function renderMaintNote(totMin,cnt){
+  const h=totMin/60;let warn=false,msg='';const next20=Math.ceil((h+0.0001)/20)*20;
+  if(h>=100||cnt>=400){warn=true;msg=`累計 <b>${h.toFixed(1)}時間</b>／<b>${cnt}回</b>。マニュアル基準（100時間・400回）に到達 — DJI製造者点検をご検討ください。`;}
+  else if(h>0&&(next20-h)<=2){warn=true;msg=`まもなく <b>${next20}時間</b> 点検です（現在 <b>${h.toFixed(1)}時間</b>）。20時間ごとの全体点検を実施してください。`;}
+  else{msg=`次回 全体点検目安：<b>${next20}時間</b>（20時間ごと）／メーカー点検：100時間・400回`;}
+  $('maintBox').innerHTML=`<div class="maint-note ${warn?'warn':''}">🔧 ${msg}</div>`;
+}
+function emptyMsg(t){return`<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a99b89" stroke-width="1.5"><path d="M3 5h18M3 12h18M3 19h18"/></svg><div>${t}</div></div>`;}
+
+function flightRow(f){const loc=f.from?(f.to&&f.to!==f.from?esc(f.from)+' → '+esc(f.to):esc(f.from)):'(場所未記入)';return`<div class="rec" onclick="detailFlight('${f.id}')"><div class="r-main"><div class="r-date">${fmtDate(f.date)}${f.takeoff?'  '+f.takeoff:''}</div><div class="r-ttl">${loc}</div><div class="r-meta">${esc(f.purpose||'')}</div></div><div class="r-side"><span class="pill time">${hm(f.dur)}</span></div></div>`;}
+function inspRow(it){const bad=it.post==='異常あり'||Object.values(it.results||{}).includes('異常')||Object.values(it.postChecks||{}).includes('異常');return`<div class="rec ${bad?'bad':''}" onclick="detailInsp('${it.id}')"><div class="r-main"><div class="r-date">${fmtDate(it.date)}${it.time?'  '+it.time:''}</div><div class="r-ttl">日常点検 ／ ${esc(it.inspector||'')}</div><div class="r-meta">${esc(it.place||'')}</div></div><div class="r-side"><span class="pill ${bad?'bad':'ok'}">${bad?'異常あり':'異常なし'}</span></div></div>`;}
+function maintRow(m){return`<div class="rec" onclick="detailMaint('${m.id}')"><div class="r-main"><div class="r-date">${fmtDate(m.date)}${m.time?'  '+m.time:''}</div><div class="r-ttl">${esc(m.content||'(整備内容未記入)')}</div><div class="r-meta">${esc(m.reason||'')}${m.place?' ・ '+esc(m.place):''}</div></div><div class="r-side">${m.total?`<span class="pill time">${esc(m.total)}</span>`:''}</div></div>`;}
+
+function openSheet(html){$('sheetBody').innerHTML=html;$('sheetBg').classList.add('show');document.body.style.overflow='hidden';}
+function closeSheet(){$('sheetBg').classList.remove('show');document.body.style.overflow='';}
+function openForm(){if(cur==='flight')formFlight();else if(cur==='insp')formInsp();else if(cur==='maint')formMaint();}
+function dl(key){return(SET.masters[key]||[]).map(v=>`<option value="${esc(v)}">`).join('');}
+function acOptions(sel){return SET.aircraft.map(a=>`<option value="${a.id}" ${a.id===sel?'selected':''}>${esc(a.name||a.drone||a.reg)}</option>`).join('');}
+function segPick(btn,hid){btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');$(hid).value=btn.dataset.v;}
+
+/* FLIGHT */
+function formFlight(edit){const f=edit||{};const same=!f.to||f.to===f.from;const acid=f.aircraftId||SET.active;openSheet(`
+   <h3>${edit?'飛行記録の編集':'飛行記録を追加'}</h3>
+   <label class="fld"><span class="lbl">機体</span><select id="f_ac">${acOptions(acid)}</select></label>
+   <div class="row2">
+     <label class="fld"><span class="lbl">飛行年月日<span class="req">*</span></span><input type="date" id="f_date" value="${f.date||todayStr()}"></label>
+     <label class="fld"><span class="lbl">飛行概要</span><input id="f_purpose" list="dl_purpose" value="${esc(f.purpose||'')}"><datalist id="dl_purpose">${dl('purpose')}</datalist></label>
+   </div>
+   <label class="fld"><span class="lbl">離陸場所</span><input id="f_from" list="dl_place" value="${esc(f.from||'')}" oninput="if($('f_same').checked)$('f_to').value=this.value"><datalist id="dl_place">${dl('place')}</datalist></label>
+   <label class="chkline"><input type="checkbox" id="f_same" ${same?'checked':''} onchange="toggleTo()">離着陸地が同じ</label>
+   <label class="fld" id="f_to_wrap" style="${same?'display:none':''}"><span class="lbl">着陸場所</span><input id="f_to" list="dl_place2" value="${esc(f.to||f.from||'')}"><datalist id="dl_place2">${dl('place')}</datalist></label>
+   <div class="row2">
+     <label class="fld"><span class="lbl">離陸時刻</span><input type="time" id="f_to_t" value="${f.takeoff||''}" onchange="autoDur()"></label>
+     <label class="fld"><span class="lbl">着陸時刻</span><input type="time" id="f_la" value="${f.landing||''}" onchange="autoDur()"></label>
+   </div>
+   <label class="fld"><span class="lbl">飛行時間（分）</span><input type="number" id="f_dur" inputmode="numeric" value="${f.dur??''}" placeholder="離着陸時刻から自動計算"></label>
+   <div class="row2">
+     <label class="fld"><span class="lbl">操縦者</span><input id="f_pilot" value="${esc(f.pilot||SET.pilot)}"></label>
+     <label class="fld"><span class="lbl">監督者</span><input id="f_sup" list="dl_sup" value="${esc(f.supervisor||'')}"><datalist id="dl_sup">${dl('supervisor')}</datalist></label>
+   </div>
+   <div class="row2">
+     <label class="fld"><span class="lbl">バッテリー</span><input id="f_batt" list="dl_battery" value="${esc(f.battery||'')}"><datalist id="dl_battery">${dl('battery')}</datalist></label>
+     <label class="fld"><span class="lbl">風速・天候</span><input id="f_wind" value="${esc(f.wind||'')}" placeholder="例 晴 3m/s"></label>
+   </div>
+   <label class="fld"><span class="lbl">飛行の安全に影響のあった事項</span><textarea id="f_note">${esc(f.note||'')}</textarea></label>
+   <button class="btn primary" onclick="saveFlight('${edit?f.id:''}')">${edit?'更新する':'記録を保存'}</button>
+   ${edit?`<button class="btn danger mini" style="margin-top:10px" onclick="delRec('f','${f.id}')">この記録を削除</button>`:''}`);}
+function toggleTo(){const same=$('f_same').checked;$('f_to_wrap').style.display=same?'none':'';if(same)$('f_to').value=$('f_from').value;}
+function autoDur(){const d=diffMin($('f_to_t').value,$('f_la').value);if(d!=null)$('f_dur').value=d;}
+function saveFlight(id){if(!$('f_date').value){toast('飛行年月日は必須です');return;}
+  const acid=$('f_ac').value;const ac=acById(acid);const from=$('f_from').value.trim();const to=$('f_same').checked?from:$('f_to').value.trim();
+  const rec={id:id||uid(),aircraftId:acid,date:$('f_date').value,purpose:$('f_purpose').value.trim(),from,to,takeoff:$('f_to_t').value,landing:$('f_la').value,dur:$('f_dur').value!==''?parseInt($('f_dur').value,10):diffMin($('f_to_t').value,$('f_la').value),pilot:$('f_pilot').value.trim(),supervisor:$('f_sup').value.trim(),battery:$('f_batt').value.trim(),wind:$('f_wind').value.trim(),note:$('f_note').value.trim(),reg:ac.reg,drone:ac.drone};
+  learn('purpose',rec.purpose);learn('place',from);learn('place',to);learn('battery',rec.battery);learn('supervisor',rec.supervisor);
+  if(id){const i=FL.findIndex(x=>x.id===id);FL[i]=rec;}else FL.unshift(rec);sortF();save(K.f,FL);SET.active=acid;save(K.set,SET);closeSheet();toast('飛行記録を保存しました');render();}
+function detailFlight(id){const f=FL.find(x=>x.id===id);if(!f)return;openSheet(`<h3>飛行記録</h3>
+    ${dRow('飛行年月日',fmtDate(f.date),1)}${dRow('機体／登録記号',`${esc(f.drone)} ${esc(f.reg)}`,1)}
+    ${dRow('飛行概要',esc(f.purpose)||'—')}${dRow('離陸場所',esc(f.from)||'—')}${dRow('着陸場所',esc(f.to||f.from)||'—')}
+    ${dRow('離陸／着陸時刻',`${f.takeoff||'—'} → ${f.landing||'—'}`,1)}${dRow('飛行時間',hm(f.dur),1)}
+    ${dRow('操縦者',esc(f.pilot)||'—')}${dRow('監督者',esc(f.supervisor)||'—')}${dRow('バッテリー',esc(f.battery)||'—')}
+    ${dRow('風速・天候',esc(f.wind)||'—')}${dRow('安全に影響した事項',esc(f.note)||'—')}
+    <div class="btn-row"><button class="btn ghost mini" onclick="formFlight(FL.find(x=>x.id==='${id}'))">編集</button><button class="btn danger mini" onclick="delRec('f','${id}')">削除</button></div>`);}
+
+/* INSPECTION */
+function formInsp(edit){const it=edit||{};const res=it.results||{};const notes=it.notes||{};const pc=it.postChecks||{};const acid=it.aircraftId||SET.active;openSheet(`
+   <h3>${edit?'日常点検の編集':'日常点検を追加'}</h3>
+   <label class="fld"><span class="lbl">機体</span><select id="i_ac">${acOptions(acid)}</select></label>
+   <div class="row2">
+     <label class="fld"><span class="lbl">点検日<span class="req">*</span></span><input type="date" id="i_date" value="${it.date||todayStr()}"></label>
+     <label class="fld"><span class="lbl">点検時刻</span><input type="time" id="i_time" value="${it.time||''}"></label>
+   </div>
+   <div class="row2">
+     <label class="fld"><span class="lbl">点検者</span><input id="i_insp" value="${esc(it.inspector||SET.pilot)}"></label>
+     <label class="fld"><span class="lbl">実施場所</span><input id="i_place" list="dl_place" value="${esc(it.place||'')}"><datalist id="dl_place">${dl('place')}</datalist></label>
+   </div>
+   <div style="font-size:12.5px;color:var(--navy);font-weight:600;margin:4px 2px 8px">点検項目<button type="button" class="btn ghost" style="display:inline-block;width:auto;padding:5px 12px;font-size:12px;margin-left:6px" onclick="allOk()">全て正常</button></div>
+   <div id="i_items">${INSP_ITEMS.map((it2,ix)=>{const k=String(ix);const c=res[k]||'';return`
+     <div class="insp-item ${c==='異常'?'bad':''}" data-k="${k}" data-val="${c}">
+       <div class="insp-head"><span class="ix">${ix+1}</span><div><span class="nm">${it2[0]}</span><div class="desc">${it2[1]}</div></div></div>
+       <div class="toggle"><button type="button" class="${c==='正常'?'ok-on':''}" onclick="tgl(this,'正常')">正常</button><button type="button" class="${c==='異常'?'bad-on':''}" onclick="tgl(this,'異常')">異常</button></div>
+       <label class="fld insp-note" style="margin:0"><span class="lbl" style="margin-top:8px">異常の内容</span><input data-note="${k}" value="${esc(notes[k]||'')}"></label>
+     </div>`;}).join('')}</div>
+   <div style="font-size:12.5px;color:var(--navy);font-weight:600;margin:10px 2px 8px">飛行後点検</div>
+   <label class="fld"><span class="lbl">飛行後点検結果</span><div class="seg"><button type="button" onclick="segPick(this,'i_post')" data-v="異常なし" class="${it.post!=='異常あり'?'on':''}">異常なし</button><button type="button" onclick="segPick(this,'i_post')" data-v="異常あり" class="${it.post==='異常あり'?'on':''}">異常あり</button></div><input type="hidden" id="i_post" value="${esc(it.post||'異常なし')}"></label>
+   <div id="i_pchecks">${POST_CHECKS.map((p,ix)=>{const k=String(ix);const c=pc[k]||'';return`
+     <div class="insp-item ${c==='異常'?'bad':''}" data-pk="${k}" data-val="${c}">
+       <div class="insp-head"><span class="ix">✓</span><div><span class="nm" style="font-size:12.5px;font-weight:600">${p}</span></div></div>
+       <div class="toggle"><button type="button" class="${c==='正常'?'ok-on':''}" onclick="tgl(this,'正常')">正常</button><button type="button" class="${c==='異常'?'bad-on':''}" onclick="tgl(this,'異常')">異常</button></div>
+     </div>`;}).join('')}</div>
+   <label class="fld"><span class="lbl">備考</span><textarea id="i_memo">${esc(it.memo||'')}</textarea></label>
+   <button class="btn primary" onclick="saveInsp('${edit?it.id:''}')">${edit?'更新する':'点検を保存'}</button>
+   ${edit?`<button class="btn danger mini" style="margin-top:10px" onclick="delRec('i','${it.id}')">この記録を削除</button>`:''}`);}
+function tgl(btn,val){const w=btn.closest('.insp-item');w.querySelectorAll('.toggle button').forEach(b=>b.classList.remove('ok-on','bad-on'));btn.classList.add(val==='正常'?'ok-on':'bad-on');w.dataset.val=val;w.classList.toggle('bad',val==='異常');}
+function allOk(){document.querySelectorAll('#i_items .insp-item, #i_pchecks .insp-item').forEach(w=>{w.querySelectorAll('.toggle button').forEach(b=>b.classList.remove('ok-on','bad-on'));w.querySelector('.toggle button').classList.add('ok-on');w.dataset.val='正常';w.classList.remove('bad');});}
+function saveInsp(id){if(!$('i_date').value){toast('点検日は必須です');return;}
+  const acid=$('i_ac').value;const ac=acById(acid);const results={},notes={},postChecks={};
+  document.querySelectorAll('#i_items .insp-item').forEach(w=>{const k=w.dataset.k;const v=w.dataset.val||'';if(v)results[k]=v;const n=w.querySelector('[data-note]').value.trim();if(n)notes[k]=n;});
+  document.querySelectorAll('#i_pchecks .insp-item').forEach(w=>{const k=w.dataset.pk;const v=w.dataset.val||'';if(v)postChecks[k]=v;});
+  const rec={id:id||uid(),aircraftId:acid,date:$('i_date').value,time:$('i_time').value,inspector:$('i_insp').value.trim(),place:$('i_place').value.trim(),results,notes,postChecks,post:$('i_post').value,memo:$('i_memo').value.trim(),reg:ac.reg,drone:ac.drone};
+  learn('place',rec.place);
+  if(id){const i=IN.findIndex(x=>x.id===id);IN[i]=rec;}else IN.unshift(rec);sortI();save(K.i,IN);SET.active=acid;save(K.set,SET);closeSheet();toast('点検記録を保存しました');render();}
+function detailInsp(id){const it=IN.find(x=>x.id===id);if(!it)return;
+  const rows=INSP_ITEMS.map((x,ix)=>{const k=String(ix);const v=(it.results||{})[k]||'—';const bad=v==='異常';return`<div class="det-row"><span class="k">${ix+1}. ${x[0]}</span><span class="v" style="color:${bad?'var(--red)':'var(--ink)'}">${v}${(it.notes||{})[k]?'<br><small style="color:var(--muted)">'+esc(it.notes[k])+'</small>':''}</span></div>`;}).join('');
+  const pcs=POST_CHECKS.map((p,ix)=>{const k=String(ix);const v=(it.postChecks||{})[k]||'—';const bad=v==='異常';return`<div class="det-row"><span class="k" style="font-size:12px">${p}</span><span class="v" style="color:${bad?'var(--red)':'var(--ink)'}">${v}</span></div>`;}).join('');
+  const bad=it.post==='異常あり';
+  openSheet(`<h3>日常点検記録</h3>${dRow('実施日時',`${fmtDate(it.date)} ${it.time||''}`,1)}${dRow('機体／登録記号',`${esc(it.drone)} ${esc(it.reg)}`,1)}${dRow('実施場所',esc(it.place)||'—')}${dRow('実施者',esc(it.inspector)||'—')}<div style="font-size:12.5px;color:var(--navy);font-weight:700;margin:14px 2px 4px">点検項目</div>${rows}<div style="font-size:12.5px;color:var(--navy);font-weight:700;margin:14px 2px 4px">飛行後点検：<span style="color:${bad?'var(--red)':'var(--ok)'}">${esc(it.post)||'—'}</span></div>${pcs}${dRow('備考',esc(it.memo)||'—')}<div class="btn-row"><button class="btn ghost mini" onclick="formInsp(IN.find(x=>x.id==='${id}'))">編集</button><button class="btn danger mini" onclick="delRec('i','${id}')">削除</button></div>`);}
+
+/* MAINTENANCE */
+function formMaint(edit){const m=edit||{};const acid=m.aircraftId||SET.active;openSheet(`<h3>${edit?'整備記録の編集':'整備記録を追加'}</h3>
+   <label class="fld"><span class="lbl">機体</span><select id="m_ac">${acOptions(acid)}</select></label>
+   <div class="row2">
+     <label class="fld"><span class="lbl">実施日<span class="req">*</span></span><input type="date" id="m_date" value="${m.date||todayStr()}"></label>
+     <label class="fld"><span class="lbl">実施時刻</span><input type="time" id="m_time" value="${m.time||''}"></label>
+   </div>
+   <label class="fld"><span class="lbl">総飛行時間（任意）</span><input id="m_total" value="${esc(m.total||'')}" placeholder="例 0:35"></label>
+   <label class="fld"><span class="lbl">点検・整備の内容</span><textarea id="m_content">${esc(m.content||'')}</textarea></label>
+   <div class="row2">
+     <label class="fld"><span class="lbl">実施理由</span><input id="m_reason" list="dl_reason" value="${esc(m.reason||'')}"><datalist id="dl_reason">${dl('reason')}</datalist></label>
+     <label class="fld"><span class="lbl">実施者</span><input id="m_eng" list="dl_eng" value="${esc(m.engineer||SET.pilot)}"><datalist id="dl_eng">${dl('engineer')}</datalist></label>
+   </div>
+   <label class="fld"><span class="lbl">実施場所</span><input id="m_place" list="dl_place" value="${esc(m.place||'')}"><datalist id="dl_place">${dl('place')}</datalist></label>
+   <label class="fld"><span class="lbl">備考</span><textarea id="m_note">${esc(m.note||'')}</textarea></label>
+   <button class="btn primary" onclick="saveMaint('${edit?m.id:''}')">${edit?'更新する':'記録を保存'}</button>
+   ${edit?`<button class="btn danger mini" style="margin-top:10px" onclick="delRec('m','${m.id}')">この記録を削除</button>`:''}`);}
+function saveMaint(id){if(!$('m_date').value){toast('実施日は必須です');return;}
+  const acid=$('m_ac').value;
+  const rec={id:id||uid(),aircraftId:acid,date:$('m_date').value,time:$('m_time').value,total:$('m_total').value.trim(),content:$('m_content').value.trim(),reason:$('m_reason').value.trim(),engineer:$('m_eng').value.trim(),place:$('m_place').value.trim(),note:$('m_note').value.trim()};
+  learn('reason',rec.reason);learn('engineer',rec.engineer);learn('place',rec.place);
+  if(id){const i=MT.findIndex(x=>x.id===id);MT[i]=rec;}else MT.unshift(rec);sortM();save(K.m,MT);SET.active=acid;save(K.set,SET);closeSheet();toast('整備記録を保存しました');render();}
+function detailMaint(id){const m=MT.find(x=>x.id===id);if(!m)return;const ac=acById(m.aircraftId);openSheet(`<h3>点検整備記録</h3>${dRow('実施日時',`${fmtDate(m.date)} ${m.time||''}`,1)}${dRow('機体／登録記号',`${esc(ac.drone)} ${esc(ac.reg)}`,1)}${dRow('総飛行時間',esc(m.total)||'—',1)}${dRow('整備内容',esc(m.content)||'—')}${dRow('実施理由',esc(m.reason)||'—')}${dRow('実施場所',esc(m.place)||'—')}${dRow('実施者',esc(m.engineer)||'—')}${dRow('備考',esc(m.note)||'—')}<div class="btn-row"><button class="btn ghost mini" onclick="formMaint(MT.find(x=>x.id==='${id}'))">編集</button><button class="btn danger mini" onclick="delRec('m','${id}')">削除</button></div>`);}
+
+function dRow(k,v,mono){return`<div class="det-row"><span class="k">${k}</span><span class="v ${mono?'mono':''}">${v}</span></div>`;}
+function delRec(t,id){if(!confirm('この記録を削除しますか？'))return;if(t==='f'){FL=FL.filter(x=>x.id!==id);save(K.f,FL);}if(t==='i'){IN=IN.filter(x=>x.id!==id);save(K.i,IN);}if(t==='m'){MT=MT.filter(x=>x.id!==id);save(K.m,MT);}closeSheet();toast('削除しました');render();}
+function learn(key,val){if(!val)return;if(!SET.masters[key])SET.masters[key]=[];if(!SET.masters[key].includes(val)){SET.masters[key].unshift(val);SET.masters[key]=SET.masters[key].slice(0,40);save(K.set,SET);}}
+
+/* aircraft mgmt */
+function addAircraft(){const a={id:uid(),name:'新しい機体',reg:'JU',maker:'DJI',drone:'',kind:'回転翼航空機(マルチローター)',serial:'',typeCert:'',airCert:'',airDate:'',carryF:0,carryMin:0};SET.aircraft.push(a);SET.active=a.id;save(K.set,SET);renderSettings();render();toast('機体を追加しました');}
+function delAircraft(){
+  if(SET.aircraft.length<=1){toast('機体は最低1つ必要です');return;}
+  const id=SET.active;const rc=FL.filter(x=>x.aircraftId===id).length+IN.filter(x=>x.aircraftId===id).length+MT.filter(x=>x.aircraftId===id).length;
+  if(rc>0){if(!confirm(`この機体には${rc}件の記録があります。機体と記録をすべて削除しますか？`))return;FL=FL.filter(x=>x.aircraftId!==id);IN=IN.filter(x=>x.aircraftId!==id);MT=MT.filter(x=>x.aircraftId!==id);save(K.f,FL);save(K.i,IN);save(K.m,MT);}
+  else{if(!confirm('この機体を削除しますか？'))return;}
+  SET.aircraft=SET.aircraft.filter(a=>a.id!==id);SET.active=SET.aircraft[0].id;save(K.set,SET);renderSettings();render();toast('機体を削除しました');}
+
+function renderSettings(){
+  const ac=activeAc();
+  $('setPilot').value=SET.pilot||'';$('setCert').value=SET.cert||'';$('setCertIssue').value=SET.certIssue||'';$('setCertReg').value=SET.certReg||'';
+  $('setName').value=ac.name||'';$('setReg').value=ac.reg||'';$('setMaker').value=ac.maker||'';$('setDrone').value=ac.drone||'';$('setKind').value=ac.kind||'';
+  $('setSerial').value=ac.serial||'';$('setTypeCert').value=ac.typeCert||'';$('setAirCert').value=ac.airCert||'';$('setAirDate').value=ac.airDate||'';
+  $('setCarryF').value=ac.carryF??0;$('setCarryMin').value=ac.carryMin??0;
+  // combined pilot summary
+  const allCarryF=SET.aircraft.reduce((s,a)=>s+N(a.carryF),0);
+  const allCarryMin=SET.aircraft.reduce((s,a)=>s+N(a.carryMin),0);
+  const tF=allCarryF+FL.length,tMin=allCarryMin+FL.reduce((s,f)=>s+(f.dur||0),0);
+  const perac=SET.aircraft.map(a=>{const fl=FL.filter(f=>f.aircraftId===a.id);const mn=N(a.carryMin)+fl.reduce((s,f)=>s+(f.dur||0),0);return `${esc(a.name||a.drone)}：${hm(mn)}（${N(a.carryF)+fl.length}回）`;}).join('<br>');
+  $('pilotSummary').innerHTML=`<div>飛行記録: <b>${tF}</b> 件　日常点検: <b>${IN.length}</b> 件</div><div>点検整備: <b>${MT.length}</b> 件　総飛行時間: <b>${hm(tMin)}</b></div><div class="perac">機体別：<br>${perac}</div>`;
+  const labels={purpose:'飛行概要',place:'場所',battery:'バッテリー',supervisor:'監督者',engineer:'整備実施者',reason:'整備理由'};
+  $('masterBox').innerHTML=Object.keys(labels).map(key=>`<div class="set-grp"><div style="font-size:12.5px;font-weight:600;color:var(--navy);margin-top:10px">${labels[key]}</div><div class="chips" id="chips_${key}">${(SET.masters[key]||[]).map(v=>`<span class="chip">${esc(v)}<b onclick="rmMaster('${key}','${esc(v).replace(/'/g,"\\'")}')">×</b></span>`).join('')||'<span style="font-size:12px;color:var(--muted)">未登録</span>'}</div><div class="chip-add"><input id="add_${key}" placeholder="${labels[key]}を追加"><button onclick="addMaster('${key}')">＋</button></div></div>`).join('');
+  renderSwitch();
+}
+function saveBasics(){
+  SET.pilot=$('setPilot').value.trim();SET.cert=$('setCert').value.trim();SET.certIssue=$('setCertIssue').value;SET.certReg=$('setCertReg').value;
+  const ac=activeAc();
+  ac.name=$('setName').value.trim();ac.reg=$('setReg').value.trim();ac.maker=$('setMaker').value.trim();ac.drone=$('setDrone').value.trim();ac.kind=$('setKind').value.trim();
+  ac.serial=$('setSerial').value.trim();ac.typeCert=$('setTypeCert').value.trim();ac.airCert=$('setAirCert').value.trim();ac.airDate=$('setAirDate').value;
+  ac.carryF=N($('setCarryF').value);ac.carryMin=N($('setCarryMin').value);
+  save(K.set,SET);toast('保存しました');renderSettings();render();}
+function addMaster(key){const v=$('add_'+key).value.trim();if(!v)return;if(!SET.masters[key])SET.masters[key]=[];if(!SET.masters[key].includes(v))SET.masters[key].push(v);save(K.set,SET);renderSettings();}
+function rmMaster(key,v){SET.masters[key]=(SET.masters[key]||[]).filter(x=>x!==v);save(K.set,SET);renderSettings();}
+
+function dlFile(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+function stamp(){return new Date().toISOString().slice(0,10).replace(/-/g,'');}
+function exportJSON(){dlFile(`飛行日誌バックアップ_${stamp()}.json`,JSON.stringify({v:4,SET,FL,IN,MT},null,2),'application/json');toast('バックアップを書き出しました');}
+function importJSON(e){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(d.SET)SET=d.SET;if(d.FL)FL=d.FL;if(d.IN)IN=d.IN;if(d.MT)MT=d.MT;if(!SET.aircraft)SET.aircraft=structuredClone(DEF_SET.aircraft);if(!SET.active)SET.active=SET.aircraft[0].id;save(K.set,SET);save(K.f,FL);save(K.i,IN);save(K.m,MT);sortF();sortI();sortM();toast('データを復元しました');renderSettings();render();}catch(err){toast('ファイルを読めませんでした');}};fr.readAsText(e.target.files[0]);e.target.value='';}
+function csvCell(s){s=(s==null?'':String(s));return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function exportCSV(type){const ac=activeAc();let rows=[],name='';
+  if(type==='flight'){name='飛行記録(様式1)_'+(ac.name||ac.drone);
+    rows.push(['名称',ac.name,'登録記号',ac.reg,'設計製造者',ac.maker,'型式',ac.drone,'種類',ac.kind,'製造番号',ac.serial,'型式認証番号',ac.typeCert,'機体認証番号',ac.airCert]);
+    rows.push(['飛行年月日','飛行させた者の氏名','飛行概要','離陸場所','着陸場所','離陸時刻','着陸時刻','飛行時間','総飛行時間','飛行の安全に影響のあった事項','バッテリー','風速・天候']);
+    const asc=aFlights().slice().sort((a,b)=>(a.date+(a.takeoff||'00:00')).localeCompare(b.date+(b.takeoff||'00:00')));let run=N(ac.carryMin);
+    asc.forEach(f=>{run+=(f.dur||0);const nm=f.pilot+(f.supervisor?`（監督者:${f.supervisor}）`:'');rows.push([f.date,nm,f.purpose,f.from,f.to||f.from,f.takeoff,f.landing,hmc(f.dur),hmc(run),f.note,f.battery,f.wind]);});}
+  if(type==='insp'){name='日常点検記録(様式2)_'+(ac.name||ac.drone);rows.push(['実施日','実施時刻','実施場所','実施者',...INSP_ITEMS.map(x=>x[0]),'飛行後点検結果',...POST_CHECKS.map((p,i)=>'飛行後'+(i+1)),'備考']);
+    aInsp().forEach(it=>rows.push([it.date,it.time,it.place,it.inspector,...INSP_ITEMS.map((x,ix)=>(it.results||{})[String(ix)]||''),it.post,...POST_CHECKS.map((p,ix)=>(it.postChecks||{})[String(ix)]||''),it.memo]));}
+  if(type==='maint'){name='点検整備記録(様式3)_'+(ac.name||ac.drone);rows.push(['実施日','実施時刻','総飛行時間','点検整備の内容','実施理由','実施場所','実施者','備考']);
+    aMaint().forEach(m=>rows.push([m.date,m.time,m.total,m.content,m.reason,m.place,m.engineer,m.note]));}
+  const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');dlFile(`${name}_${stamp()}.csv`,csv,'text/csv');toast('CSVを書き出しました');}
+function wipeAll(){if(!confirm('すべての記録と設定を削除します（取り込んだ過去データも消えます）。よろしいですか？'))return;if(!confirm('本当に削除しますか？元に戻せません。'))return;localStorage.setItem(K.set,JSON.stringify(DEF_SET));localStorage.setItem(K.f,'[]');localStorage.setItem(K.i,'[]');localStorage.setItem(K.m,'[]');SET=structuredClone(DEF_SET);FL=[];IN=[];MT=[];toast('全データを削除しました');renderSettings();render();}
+
+sortF();sortI();sortM();render();
+</script>
+</body>
+</html>
