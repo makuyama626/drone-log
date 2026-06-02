@@ -127,7 +127,20 @@
   .chip{background:#eef1f3;color:#42525e;border-radius:20px;padding:5px 11px;font-size:12.5px;display:flex;align-items:center;gap:6px;}
   .chip b{cursor:pointer;color:#9aa6ad;font-size:15px;}
   .set-grp{margin-bottom:8px;}
-  @media print{header.app,nav.tabs,.fab,.sheet-bg,.acswitch{display:none!important;}body{padding:0;background:#fff;}}
+  #printArea{display:none;color:#000;font-family:var(--jp);}
+  #printArea .nr{text-align:right;font-size:9px;margin-bottom:1px;}
+  #printArea h4{font-size:13px;text-align:center;margin:0 0 6px;font-weight:700;line-height:1.4;}
+  #printArea h4 .ttl-en{display:block;font-size:9px;font-weight:400;}
+  #printArea .cert{font-size:9.5px;margin:3px 0 5px;}
+  #printArea table{width:100%;border-collapse:collapse;margin-bottom:6px;table-layout:auto;}
+  #printArea th,#printArea td{border:1px solid #000;padding:3px 4px;font-size:9px;vertical-align:top;line-height:1.35;word-break:break-all;overflow-wrap:anywhere;}
+  #printArea th{background:#eee;font-weight:700;text-align:center;}
+  #printArea td.c{text-align:center;}
+  #printArea .mh th,#printArea .mh td{font-size:8px;text-align:center;}
+  #printArea .ft{font-size:8px;margin-top:4px;line-height:1.4;}
+  #printArea .page{page-break-after:always;}
+  #printArea .page:last-child{page-break-after:auto;}
+  @media print{header.app,main,nav.tabs,.fab,.sheet-bg,.acswitch,.toast{display:none!important;}body{padding:0;background:#fff;}#printArea{display:block!important;}}
 </style>
 </head>
 <body>
@@ -201,6 +214,14 @@
     <h2 class="sec">入力候補（プルダウン）</h2>
     <div class="card"><div class="hint" style="margin-top:0">よく使う値を登録すると記録入力時に選べます。</div><div id="masterBox"></div></div>
 
+    <h2 class="sec">様式PDFで出力</h2>
+    <div class="card">
+      <div class="hint" style="margin-top:0">選択中の機体の記録を、国土交通省の飛行日誌の様式に合わせて出力します。表示された印刷画面で「PDFとして保存」（iPhoneは共有→ファイルに保存）を選んでください。</div>
+      <button class="btn ghost mini" style="margin-bottom:8px" onclick="printForm('flight')">飛行記録（様式1）をPDF出力</button>
+      <button class="btn ghost mini" style="margin-bottom:8px" onclick="printForm('insp')">日常点検記録（様式2）をPDF出力</button>
+      <button class="btn ghost mini" onclick="printForm('maint')">点検整備記録（様式3）をPDF出力</button>
+    </div>
+
     <h2 class="sec">データのバックアップ</h2>
     <div class="card">
       <div class="hint" style="margin-top:0">記録はこの端末内に保存されます。機種変更・データ消去に備え、定期的にバックアップしてください。CSVは選択中の機体分が出力されます。</div>
@@ -232,6 +253,8 @@
 
 <div class="sheet-bg" id="sheetBg" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet"><div class="grip"></div><div id="sheetBody"></div></div></div>
 <div class="toast" id="toast"></div>
+<style id="pageStyle"></style>
+<div id="printArea"></div>
 
 <script>
 const SEED_F=[{"id":"sf1","aircraftId":"ac1","date":"2025-11-03","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町鍛冶屋","to":"神奈川県湯河原町鍛冶屋","takeoff":"09:48","landing":"10:23","dur":35,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf2","aircraftId":"ac1","date":"2025-11-03","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜1237-8","to":"神奈川県湯河原町吉浜1237-8","takeoff":"10:30","landing":"11:00","dur":30,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf3","aircraftId":"ac1","date":"2025-11-04","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県真鶴町真鶴1175","to":"神奈川県真鶴町真鶴1175","takeoff":"13:39","landing":"14:04","dur":25,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf4","aircraftId":"ac1","date":"2025-11-04","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県真鶴町真鶴1175","to":"神奈川県真鶴町真鶴1175","takeoff":"14:07","landing":"14:32","dur":25,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf5","aircraftId":"ac1","date":"2025-11-04","purpose":"","from":"神奈川県真鶴町真鶴1175","to":"神奈川県真鶴町真鶴1175","takeoff":"14:33","landing":"14:33","dur":0,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf6","aircraftId":"ac1","date":"2025-11-04","purpose":"","from":"神奈川県真鶴町真鶴1175","to":"神奈川県真鶴町真鶴1175","takeoff":"14:33","landing":"14:51","dur":18,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf7","aircraftId":"ac1","date":"2025-11-12","purpose":"趣味(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"08:50","landing":"09:20","dur":30,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf8","aircraftId":"ac1","date":"2025-11-12","purpose":"趣味(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:21","landing":"09:38","dur":17,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf9","aircraftId":"ac1","date":"2025-11-12","purpose":"趣味(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:39","landing":"10:01","dur":22,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf10","aircraftId":"ac1","date":"2025-11-14","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県真鶴町真鶴","to":"神奈川県真鶴町真鶴","takeoff":"13:00","landing":"13:33","dur":33,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf11","aircraftId":"ac1","date":"2025-11-14","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県真鶴町真鶴","to":"神奈川県真鶴町真鶴","takeoff":"13:54","landing":"14:07","dur":13,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"ヘリコプターが飛来したので、すぐに飛行を中止し、着陸した。","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf12","aircraftId":"ac1","date":"2025-11-26","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"08:34","landing":"08:54","dur":20,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf13","aircraftId":"ac1","date":"2025-11-26","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"08:55","landing":"09:14","dur":19,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf14","aircraftId":"ac1","date":"2025-11-26","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:15","landing":"09:39","dur":24,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf15","aircraftId":"ac1","date":"2025-11-26","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:50","landing":"10:07","dur":17,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf16","aircraftId":"ac1","date":"2025-12-10","purpose":"空撮(特定飛行ではない(カテゴリーⅠ)) 新崎川","from":"神奈川県湯河原町鍛冶屋","to":"神奈川県湯河原町鍛冶屋","takeoff":"13:06","landing":"13:20","dur":14,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf17","aircraftId":"ac1","date":"2025-12-10","purpose":"空撮(特定飛行ではない(カテゴリーⅠ)) 新崎川","from":"神奈川県湯河原町鍛冶屋","to":"神奈川県湯河原町鍛冶屋","takeoff":"13:23","landing":"13:43","dur":20,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf18","aircraftId":"ac1","date":"2025-12-10","purpose":"空撮(特定飛行ではない(カテゴリーⅠ)) 新崎川","from":"湯河原町鍛冶屋","to":"湯河原町鍛冶屋","takeoff":"13:50","landing":"14:08","dur":18,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf19","aircraftId":"ac1","date":"2025-12-10","purpose":"空撮(特定飛行ではない(カテゴリーⅠ)) 新崎川","from":"湯河原町鍛冶屋","to":"湯河原町鍛冶屋","takeoff":"14:10","landing":"14:25","dur":15,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf20","aircraftId":"ac1","date":"2025-12-16","purpose":"","from":"神奈川県湯河原町吉浜1237-8","to":"神奈川県湯河原町吉浜1237-8","takeoff":"13:00","landing":"13:31","dur":31,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"プロペラガード装着テスト実施","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf21","aircraftId":"ac1","date":"2025-12-16","purpose":"趣味","from":"神奈川県湯河原町吉浜1237-8","to":"神奈川県湯河原町吉浜1237-8","takeoff":"13:48","landing":"14:20","dur":32,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf22","aircraftId":"ac1","date":"2026-05-27","purpose":"","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:10","landing":"09:40","dur":30,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf23","aircraftId":"ac1","date":"2026-05-27","purpose":"","from":"神奈川県湯河原町吉浜","to":"神奈川県湯河原町吉浜","takeoff":"09:41","landing":"10:01","dur":20,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"sf24","aircraftId":"ac1","date":"2026-05-30","purpose":"空撮(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県湯河原町真鶴 番場浦海岸","to":"神奈川県湯河原町真鶴 番場浦海岸","takeoff":"12:10","landing":"12:40","dur":30,"pilot":"松山成二","supervisor":"松山成二","battery":"","wind":"","note":"","reg":"JU325AF85AD3","drone":"DJI Mini 4 Pro"},{"id":"mv1","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"09:18","landing":"10:00","dur":42,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv2","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"10:17","landing":"11:08","dur":51,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv3","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"11:20","landing":"12:02","dur":42,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv4","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"13:30","landing":"14:05","dur":35,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv5","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"14:07","landing":"14:30","dur":23,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"},{"id":"mv6","aircraftId":"ac2","date":"2026-01-28","purpose":"操縦練習(特定飛行ではない(カテゴリーⅠ))","from":"神奈川県高座郡寒川町一宮3003-1","to":"神奈川県高座郡寒川町一宮3003-1","takeoff":"15:10","landing":"15:20","dur":10,"pilot":"松山成二","supervisor":"","battery":"","wind":"","note":"","reg":"JU3242347D93","drone":"DJI Mavic 3"}];
@@ -513,6 +536,55 @@ function exportCSV(type){const ac=activeAc();let rows=[],name='';
     aMaint().forEach(m=>rows.push([m.date,m.time,m.total,m.content,m.reason,m.place,m.engineer,m.note]));}
   const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');dlFile(`${name}_${stamp()}.csv`,csv,'text/csv');toast('CSVを書き出しました');}
 function wipeAll(){if(!confirm('すべての記録と設定を削除します（取り込んだ過去データも消えます）。よろしいですか？'))return;if(!confirm('本当に削除しますか？元に戻せません。'))return;localStorage.setItem(K.set,JSON.stringify(DEF_SET));localStorage.setItem(K.f,'[]');localStorage.setItem(K.i,'[]');localStorage.setItem(K.m,'[]');SET=structuredClone(DEF_SET);FL=[];IN=[];MT=[];toast('全データを削除しました');renderSettings();render();}
+
+/* ===== 様式PDF出力 ===== */
+function fmtDot(d){if(!d)return'';const p=d.split('-');return `${p[0]}.${+p[1]}.${+p[2]}`;}
+function fmtJ(d,t){if(!d)return'';const p=d.split('-');return `${p[0]}年${+p[1]}月${+p[2]}日${t?'\u00a0'+t:''}`;}
+function mhTable(ac){return `<table class="mh"><thead><tr><th>名称</th><th>登録記号</th><th>設計製造者</th><th>型式</th><th>種類</th><th>製造番号</th><th>型式認証番号</th><th>機体認証番号</th></tr></thead><tbody><tr><td>${esc(ac.name)}</td><td>${esc(ac.reg)}</td><td>${esc(ac.maker)}</td><td>${esc(ac.drone)}</td><td>${esc(ac.kind)}</td><td>${esc(ac.serial)}</td><td>${esc(ac.typeCert)}</td><td>${esc(ac.airCert)}</td></tr></tbody></table>`;}
+function buildFlight(ac){
+  const asc=aFlights().slice().sort((a,b)=>(a.date+(a.takeoff||'00:00')).localeCompare(b.date+(b.takeoff||'00:00')));
+  const per=16,pages=[];for(let i=0;i<asc.length;i+=per)pages.push(asc.slice(i,i+per));if(!pages.length)pages.push([]);
+  let run=N(ac.carryMin),html='';
+  const cols='<colgroup><col style="width:8%"><col style="width:11%"><col style="width:14%"><col style="width:12%"><col style="width:12%"><col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:7%"><col style="width:18%"></colgroup>';
+  pages.forEach((chunk,pi)=>{
+    let rows='';
+    if(pi===0)rows+=`<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="c">${hmc(N(ac.carryMin))}</td><td>2022年12月5日の改正航空法施行に伴い総飛行時間を新たに起算。</td></tr>`;
+    chunk.forEach(f=>{run+=(f.dur||0);const nm=esc(f.pilot)+(f.supervisor?`（監督者:${esc(f.supervisor)}）`:'');
+      rows+=`<tr><td class="c">${fmtDot(f.date)}</td><td>${nm}</td><td>${esc(f.purpose)}</td><td>${esc(f.from)}</td><td>${esc(f.to||f.from)}</td><td class="c">${f.takeoff||''}</td><td class="c">${f.landing||''}</td><td class="c">${hmc(f.dur)}</td><td class="c">${hmc(run)}</td><td>${esc(f.note)}</td></tr>`;});
+    html+=`<div class="page"><div class="nr">(NR. ${pi+1} )</div><h4>(様式1)飛行記録　無人航空機の飛行記録<span class="ttl-en">JOURNEY LOG OF UAS</span></h4>${mhTable(ac)}<div class="cert">技能証明書番号：${esc(SET.pilot)}(${esc(SET.cert)})</div>
+    <table style="table-layout:fixed">${cols}<thead><tr><th>飛行年月日</th><th>飛行させた者の氏名</th><th>飛行概要</th><th>離陸場所</th><th>着陸場所</th><th>離陸時刻</th><th>着陸時刻</th><th>飛行時間</th><th>総飛行時間</th><th>飛行の安全に影響のあった事項</th></tr></thead><tbody>${rows}</tbody></table>
+    <table><thead><tr><th colspan="5" style="text-align:left">記事 REPORT</th></tr><tr><th>発生年月日</th><th>不具合事項</th><th>処置年月日</th><th>処置その他</th><th>確認者</th></tr></thead><tbody><tr><td>&nbsp;</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>`;
+  });
+  return html;
+}
+function buildInsp(ac){
+  const asc=aInsp().slice().sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+  if(!asc.length)return `<div class="page"><h4>(様式2)日常点検記録</h4><p style="font-size:11px">この機体の点検記録がありません。</p></div>`;
+  return asc.map((it,ix)=>{
+    const itemRows=INSP_ITEMS.map((x,i)=>{const k=String(i);return `<tr><td>${x[0]}</td><td>${x[1]}</td><td class="c">${(it.results||{})[k]||''}</td><td>${esc((it.notes||{})[k]||'')}</td></tr>`;}).join('');
+    const pcs=POST_CHECKS.map((p,i)=>`${p}[${(it.postChecks||{})[String(i)]||''}]`).join('、');
+    return `<div class="page"><div class="nr">(NR. ${ix+1} )</div><h4>(様式2)日常点検記録　無人航空機の日常点検記録<span class="ttl-en">DAILY INSPECTION RECORD OF UAS</span></h4>${mhTable(ac)}
+    <table style="table-layout:fixed"><colgroup><col style="width:18%"><col><col style="width:10%"><col style="width:24%"></colgroup><thead><tr><th>点検項目</th><th>点検内容</th><th>結果</th><th>備考</th></tr></thead><tbody>${itemRows}</tbody></table>
+    <table><tbody><tr><th style="width:14%">特記事項</th><td style="text-align:left">飛行後点検：${esc(it.post)||''}<br>飛行後点検：${pcs}${it.memo?'<br>'+esc(it.memo):''}</td></tr></tbody></table>
+    <table><tbody><tr><th style="width:14%">実施場所</th><td>${esc(it.place)}</td><th style="width:14%">実施日時</th><td>${fmtJ(it.date,it.time)}</td><th style="width:12%">実施者</th><td>${esc(it.inspector)}(${esc(SET.cert)})</td></tr></tbody></table></div>`;
+  }).join('');
+}
+function buildMaint(ac){
+  const asc=aMaint().slice().sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+  const rows=asc.length?asc.map(m=>`<tr><td class="c">${fmtJ(m.date,m.time)}</td><td class="c">${esc(m.total)}</td><td>${esc(m.content)}</td><td>${esc(m.reason)}</td><td>${esc(m.place)}</td><td>${esc(m.engineer)}(${esc(SET.cert)})</td><td>${esc(m.note)}</td></tr>`).join(''):'<tr><td colspan="7" style="text-align:center">この機体の整備記録がありません。</td></tr>';
+  return `<div class="page"><div class="nr">(NR. 1 )</div><h4>(様式3)点検整備記録　無人航空機の点検整備記録<span class="ttl-en">INSPECTION AND MAINTENANCE RECORD OF UAS</span></h4>${mhTable(ac)}
+  <table style="table-layout:fixed"><colgroup><col style="width:13%"><col style="width:8%"><col style="width:27%"><col style="width:13%"><col style="width:15%"><col style="width:14%"><col style="width:10%"></colgroup><thead><tr><th>実施日時</th><th>総飛行時間</th><th>点検、修理、改造及び整備の内容</th><th>実施理由</th><th>実施場所</th><th>実施者</th><th>備考</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="ft">※前回の機体認証を受検するにあたり実施した点検整備以降の総飛行時間を出力する。機体認証を受けていない無人航空機は、点検整備作業を実施した時点での総飛行時間を出力するものとする。</div></div>`;
+}
+function printForm(type){
+  const ac=activeAc();let html='',orient='landscape';
+  if(type==='flight'){html=buildFlight(ac);orient='landscape';}
+  else if(type==='insp'){html=buildInsp(ac);orient='portrait';}
+  else if(type==='maint'){html=buildMaint(ac);orient='landscape';}
+  $('pageStyle').textContent=`@page{size:A4 ${orient};margin:8mm;}`;
+  $('printArea').innerHTML=html;
+  setTimeout(()=>{window.print();},120);
+}
 
 sortF();sortI();sortM();render();
 </script>
